@@ -1,5 +1,5 @@
 /*******************************************************************************
-* Copyright 2022 Intel Corporation
+* Copyright 2022-2023 Intel Corporation
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -230,6 +230,7 @@ struct simple_sparse_reorder_impl<SIMPLE_SPARSE_REORDER_TEMPL_CALL,
                             data_t<type_o> o = inp[plain_off];
                             if (o != 0) {
                                 *outp++ = o;
+                                printf("%d\n", (int)o);
                                 bitmask_ptr[bitmask_idx] |= (1UL << bit);
                                 non_zeros++;
                             } else {

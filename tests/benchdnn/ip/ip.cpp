@@ -1,5 +1,5 @@
 /*******************************************************************************
-* Copyright 2017-2022 Intel Corporation
+* Copyright 2017-2023 Intel Corporation
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
 *******************************************************************************/
 
 #include <cstring>
+#include <random>
+#include <vector>
 
 #include <float.h>
 #include <math.h>
@@ -207,32 +209,6 @@ int fill_src(
     return OK;
 }
 
-void adjust_weights(const prb_t *prb, dnn_mem_t &mem_fp,
-        dnnl_dim_t expected_nnz, dnnl_dim_t real_nnz) {
-    const bool is_nnz_missing = (real_nnz < expected_nnz);
-
-    for_(int64_t oc = 0; oc < prb->oc; oc++)
-    for_(int64_t ic = 0; ic < prb->ic; ic++)
-    for_(int64_t kd = 0; kd < prb->id; kd++)
-    for_(int64_t kh = 0; kh < prb->ih; kh++)
-    for_(int64_t kw = 0; kw < prb->iw; kw++)
-    {
-        float &value = ((float *)mem_fp)[wei_off_f(prb, oc, ic, kd, kh, kw)];
-
-        if (is_nnz_missing) {
-            if (value == 0.0f) {
-                value = 1.0f;
-                if (++real_nnz == expected_nnz) return;
-            }
-        } else {
-            if (value != 0.0f) {
-                value = 0.0f;
-                if (--real_nnz == expected_nnz) return;
-            }
-        }
-    }
-}
-
 int fill_wei(
         const prb_t *prb, dnn_mem_t &mem_dt, dnn_mem_t &mem_fp, res_t *res) {
     const bool s8_s8
@@ -254,6 +230,17 @@ int fill_wei(
     const dnnl_dim_t expected_nnz
             = (prb->oc * prb->ic * prb->id * prb->ih * prb->iw) * f_sparsity;
 
+    std::vector<bool> nnz_mask;
+    if (is_sparse) {
+        const auto nelems = mem_fp.nelems();
+        nnz_mask.resize(nelems, false);
+        const dnnl_dim_t nnz = expected_nnz;
+        for (int i = 0; i < nnz; i++)
+            nnz_mask[i] = true;
+        std::shuffle(nnz_mask.begin(), nnz_mask.end(),
+                std::default_random_engine {});
+    }
+
     dnnl::impl::parallel_nd(prb->oc, prb->ic, prb->id, prb->ih, prb->iw,
             [&](int64_t oc, int64_t ic, int64_t kd, int64_t kh, int64_t kw) {
                 const int gen = 127 * kd + 131 * kh + 137 * kw + 139 * oc
@@ -263,24 +250,10 @@ int fill_wei(
                 const float value = non_base
                         ? std::max(c.f_min + gen * 1 % range, 1.0)
                         : c.f_base;
-                ((float *)mem_fp)[wei_off_f(prb, oc, ic, kd, kh, kw)] = value;
+                auto idx = wei_off_f(prb, oc, ic, kd, kh, kw);
+                const bool is_one = is_sparse ? nnz_mask[idx] : true;
+                ((float *)mem_fp)[idx] = value * is_one;
             });
-
-    // Get the number of generated non-zero elements.
-    std::atomic<dnnl_dim_t> real_nnz {0};
-    dnnl::impl::parallel_nd(prb->oc, prb->ic, prb->id, prb->ih, prb->iw,
-            [&](int64_t oc, int64_t ic, int64_t kd, int64_t kh, int64_t kw) {
-                if (((float *)mem_fp)[wei_off_f(prb, oc, ic, kd, kh, kw)]
-                        != 0.0f) {
-                    real_nnz++;
-                }
-            });
-
-    // XXX: Adjust the weights if the number of generated non-zero elements is
-    // less or greater than the expected number of non-zero elements.
-    // TODO: Implement less ugly deterministic way to generate sparse tensors
-    // with with the given nnz.
-    adjust_weights(prb, mem_fp, expected_nnz, real_nnz);
 
     SAFE(mem_dt.reorder(mem_fp), WARN);
     if (s8_s8 && is_cpu() && !is_sparse) {
