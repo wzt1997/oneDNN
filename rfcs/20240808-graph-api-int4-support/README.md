@@ -415,4 +415,52 @@ different modes.
 
 ## Q&A
 
-To Add.
+1. Does primitive `reorder` support int4 with per_group?
+
+   Currently no. `reorder` primitive is used for data type and format 
+   conversion and the grouped scales and zero points are mainly used for
+   quantization and dequantization.
+
+2. How does int4 design and is there any BKC to use it? Which OP support int4
+   data type. FWK adoption status for int4? Which layers/models use int4?
+
+   `int4` is a quantized data type. It's mainly used for speedup inference and
+   reducing the model size. There are several scenarios where int4 can be used
+   in Openvino:
+
+   1. Quantize both weights and activations to int4.
+      
+      Such as [models](https://github.com/openvinotoolkit/nncf/blob/develop/docs/ModelZoo.md): resnet-50, mobilenet-v2, etc.
+
+   2. Quantize weights only to int4 and keep activations as it is.
+         
+      Such as [models](https://docs.openvino.ai/2024/openvino-workflow/model-optimization-guide/weight-compression.html): opt, llama2, etc.
+
+   3. Quantize KV cache used in LLMs to int4 and keep others as it is.
+   
+      Some JIRA requirements are created for int4 KV cache support by Openvino.
+   
+   In tensorRT, int4 is one of the [Supported Types](https://docs.nvidia.com/deeplearning/tensorrt/archives/tensorrt-1030/developer-guide/index.html#supported-types)
+   and it is used for weight-only-quantization. OPs support int4 data type are
+   [Quantize](https://docs.nvidia.com/deeplearning/tensorrt/operators/docs/Quantize.html?highlight=int4) and [Dequantize](https://docs.nvidia.com/deeplearning/tensorrt/operators/docs/Dequantize.html). 
+   And both of them supported group scales and zps (blocked quantization). [WoQ](https://docs.nvidia.com/deeplearning/tensorrt/developer-guide/index.html#weight-only-quantization)
+   is available only for INT4 block quantization with GEMM layers.(MatMul)
+
+3. Are scales/zps used in runtime as input tensors? How to get them and where to
+   store them ? in cpu or gpu?
+   
+   Openvino uses them in runtime. [NNCF](https://github.com/openvinotoolkit/nncf/blob/develop/docs/usage/post_training_compression/weights_compression/Usage.md)
+   is [recommended by Openvino](https://docs.openvino.ai/2024/openvino-workflow/model-optimization-guide/weight-compression.html)
+   to get the Weight Compression models and parameters.
+
+4. `math_mode` depend on quantization bkc, set it in graph, partition or OP
+   level?
+   
+   Limited by Openvino, need set it in partition level.
+
+5. What is int4 sdp pattern used in FWK.
+
+   [PyTorch blog](https://pytorch.org/blog/int4-decoding/) for in4 GQA pattern:
+   ![Pytorch blog](img/int4_sdp_pattern.png)
+  
+
