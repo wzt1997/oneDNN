@@ -68,20 +68,7 @@ class logical_tensor {
         f16 = dnnl_f16,
         /// non-standard 16-bit (bfloat16 w/ 7 bit mantissa) floating point.
         bf16 = dnnl_bf16,
-        /// 32-bit/single-precision floating point.
-        f32 = dnnl_f32,
-        /// 32-bit signed integer.
-        s32 = dnnl_s32,
-        /// 8-bit signed integer.
-        s8 = dnnl_s8,
-        /// 8-bit unsigned integer.
-        u8 = dnnl_u8,
-        /// Boolean data type. Size is C++ implementation defined.
-        boolean = dnnl_boolean,
-        /// 8-bit floating point data type with E5M2. Added by this RFC.
-        f8_e5m2 = dnnl_f8_e5m2,
-        /// 8-bit floating point data type with E4M3. Added by this RFC.
-        f8_e4m3 = dnnl_f8_e4m3,
+        /// ...
         /// 4-bit signed integer.
         s4 = dnnl_s4,
         /// 4-bit unsigned integer.
