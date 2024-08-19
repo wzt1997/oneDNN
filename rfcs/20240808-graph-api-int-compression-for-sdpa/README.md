@@ -43,24 +43,7 @@ typedef enum {
     dnnl_f16 = 1,
     /// non-standard 16-bit (bfloat16 w/ 7 bit mantissa) floating point.
     dnnl_bf16 = 2,
-    /// 32-bit/single-precision floating point.
-    dnnl_f32 = 3,
-    /// 32-bit signed integer.
-    dnnl_s32 = 4,
-    /// 8-bit signed integer.
-    dnnl_s8 = 5,
-    /// 8-bit unsigned integer.
-    dnnl_u8 = 6,
-    /// 64-bit/double-precision floating point.
-    dnnl_f64 = 7,
-    /// Boolean data type. Size is C++ implementation defined.
-    dnnl_boolean = 8,
-    /// [OFP8 standard 8-bit floating-point](https://www.opencompute.org/documents/ocp-8-bit-floating-point-specification-ofp8-revision-1-0-2023-06-20-pdf)
-    /// with a 5-bit exponent and a 2-bit mantissa.
-    dnnl_f8_e5m2 = 9,
-    /// [OFP8 standard 8-bit floating-point](https://www.opencompute.org/documents/ocp-8-bit-floating-point-specification-ofp8-revision-1-0-2023-06-20-pdf)
-    /// with a 4-bit exponent and a 3-bit mantissa.
-    dnnl_f8_e4m3 = 10,
+    /// ...
     /// 4-bit signed integer.
     dnnl_s4 = 11,
     /// 4-bit unsigned integer.
